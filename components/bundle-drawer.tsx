@@ -69,7 +69,7 @@ export function BundleDrawer() {
                   <ShoppingBag className="mb-4 h-12 w-12 text-navy-300" strokeWidth={1.5} />
                   <h3 className="mb-2 text-lg font-bold text-navy-900">Your bundle is empty</h3>
                   <p className="mb-6 text-sm text-navy-600">
-                    Browse and add items. 3+ items save automatically.
+                    Browse and add items. Pick 3, 5, or 7 to unlock bundle pricing.
                   </p>
                   <button
                     onClick={close}

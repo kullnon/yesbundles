@@ -25,12 +25,23 @@ export type Product = {
   created_at: string;
 };
 
+export type BundleTier = {
+  qty: number;
+  price_cents: number;
+};
+
+export type BundleRuleConfig = {
+  tiers?: BundleTier[];
+  min_qty?: number;
+  discount_percent?: number;
+};
+
 export type BundleRule = {
   id: string;
   name: string;
+  rule_type: 'tiered_flat' | 'percentage_off';
+  config: BundleRuleConfig;
   is_active: boolean;
-  discount_type: 'flat_tiered' | 'percent';
-  tiers: Array<{ min_items: number; price_cents?: number; percent_off?: number }>;
   priority: number;
 };
 

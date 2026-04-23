@@ -1,62 +1,43 @@
-import type { BundleRule, BundleItem } from '@/lib/types/product';
+import type { BundleRule, BundleItem, BundleTier } from '@/lib/types/product';
 
 export type PriceResult = {
   subtotal_cents: number;
   discount_cents: number;
   final_price_cents: number;
-  applied_tier?: { min_items: number; price_cents?: number; percent_off?: number };
+  applied_tier: BundleTier | null; // null when count doesn't hit an exact tier
+  next_tier: BundleTier | null;    // nearest tier above current count (encouragement)
+  available_tiers: BundleTier[];   // all tiers sorted ascending by qty
 };
 
 /**
- * Given a list of items in the bundle and the active rule,
- * compute subtotal, discount, and final price in cents.
- *
- * Supports:
- * - flat_tiered: pick the highest tier whose min_items <= items.length, use its flat price
- * - percent:     pick the highest tier whose min_items <= items.length, apply percent_off to subtotal
+ * YesBundles pricing:
+ * - Per-item price applies unless bundle tier qty matches exactly (3, 5, 7).
+ * - Matching a tier flat-rates the bundle to the tier price.
+ * - Non-matching counts (1, 2, 4, 6, 8+) pay straight subtotal at per-item price.
  */
 export function calculateBundlePrice(
   items: BundleItem[],
   rule: BundleRule | null
-): PriceResult | null {
+): PriceResult {
   const subtotal = items.reduce((acc, i) => acc + i.price_cents, 0);
+  const count = items.length;
 
-  if (!rule || !rule.is_active || items.length === 0) {
-    return {
-      subtotal_cents: subtotal,
-      discount_cents: 0,
-      final_price_cents: subtotal,
-    };
-  }
+  const tiers =
+    rule && rule.is_active && rule.rule_type === 'tiered_flat'
+      ? [...(rule.config.tiers ?? [])].sort((a, b) => a.qty - b.qty)
+      : [];
 
-  const sortedTiers = [...(rule.tiers ?? [])].sort(
-    (a, b) => b.min_items - a.min_items
-  );
-  const applied = sortedTiers.find((t) => items.length >= t.min_items);
+  const applied = tiers.find((t) => t.qty === count) ?? null;
+  const next = tiers.find((t) => t.qty > count) ?? null;
 
-  if (!applied) {
-    return {
-      subtotal_cents: subtotal,
-      discount_cents: 0,
-      final_price_cents: subtotal,
-    };
-  }
-
-  let final = subtotal;
-
-  if (rule.discount_type === 'flat_tiered' && applied.price_cents !== undefined) {
-    final = applied.price_cents;
-  } else if (rule.discount_type === 'percent' && applied.percent_off !== undefined) {
-    final = Math.round(subtotal * (1 - applied.percent_off / 100));
-  }
-
-  // Don't let "discount" make it more expensive
-  if (final > subtotal) final = subtotal;
+  const final = applied ? applied.price_cents : subtotal;
 
   return {
     subtotal_cents: subtotal,
-    discount_cents: subtotal - final,
+    discount_cents: applied ? Math.max(0, subtotal - applied.price_cents) : 0,
     final_price_cents: final,
     applied_tier: applied,
+    next_tier: next,
+    available_tiers: tiers,
   };
 }
