@@ -60,35 +60,40 @@ export function CategoryFilter({ categories }: Props) {
         </button>
       </div>
 
-      {sortedGroups.map((groupName) => {
-        const meta = GROUP_META[groupName] ?? { emoji: '', label: groupName };
-        return (
-          <div key={groupName} className="space-y-2">
-            <div className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-navy-500">
-              <span>{meta.emoji}</span>
-              <span>{meta.label}</span>
+      <div className="grid gap-4 md:grid-cols-3">
+        {sortedGroups.map((groupName) => {
+          const meta = GROUP_META[groupName] ?? { emoji: '', label: groupName };
+          return (
+            <div
+              key={groupName}
+              className="rounded-2xl border border-navy-100 bg-white/60 p-4 shadow-card"
+            >
+              <div className="mb-3 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-electric-700">
+                <span>{meta.emoji}</span>
+                <span>{meta.label}</span>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {grouped[groupName]
+                  .sort((a, b) => a.sort_order - b.sort_order)
+                  .map((cat) => (
+                    <button
+                      key={cat.id}
+                      onClick={() => setCategory(cat.slug)}
+                      className={cn(
+                        'rounded-full px-3.5 py-1.5 text-sm font-medium transition-all',
+                        active === cat.slug
+                          ? 'bg-navy-900 text-bone-50 shadow-card'
+                          : 'bg-white text-navy-700 hover:bg-navy-50 border border-navy-100'
+                      )}
+                    >
+                      {cat.name}
+                    </button>
+                  ))}
+              </div>
             </div>
-            <div className="flex flex-wrap gap-2">
-              {grouped[groupName]
-                .sort((a, b) => a.sort_order - b.sort_order)
-                .map((cat) => (
-                  <button
-                    key={cat.id}
-                    onClick={() => setCategory(cat.slug)}
-                    className={cn(
-                      'rounded-full px-4 py-1.5 text-sm font-medium transition-all',
-                      active === cat.slug
-                        ? 'bg-navy-900 text-bone-50 shadow-card'
-                        : 'bg-white text-navy-700 hover:bg-navy-50'
-                    )}
-                  >
-                    {cat.name}
-                  </button>
-                ))}
-            </div>
-          </div>
-        );
-      })}
+          );
+        })}
+      </div>
     </div>
   );
 }
