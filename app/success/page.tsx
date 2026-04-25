@@ -23,13 +23,15 @@ async function loadOrderForSession(sessionId: string) {
     return { error: "auth" as const };
   }
 
-  // Find the order by stripe_session_id (RLS will allow only the user's own order)
-  const { data: order, error: orderError } = await supabase
+  // Use admin client for the order lookup — page verifies user_id ownership manually below.
+  // Avoids RLS race conditions on just-written rows from the Stripe webhook.
+  const adminSupabase = createAdminClient();
+
+  const { data: order, error: orderError } = await adminSupabase
     .from("orders")
     .select("id, total_cents, customer_email, paid_at, user_id")
     .eq("stripe_session_id", sessionId)
     .maybeSingle();
-
   if (orderError) {
     console.error("Order lookup error:", orderError);
     return { error: "lookup" as const };
@@ -45,7 +47,7 @@ async function loadOrderForSession(sessionId: string) {
   }
 
   // Fetch order_items joined with products for title + file_path
-  const { data: items, error: itemsError } = await supabase
+  const { data: items, error: itemsError } = await adminSupabase
     .from("order_items")
     .select(
       `
@@ -66,7 +68,7 @@ async function loadOrderForSession(sessionId: string) {
   }
 
   // Fetch the download tokens for this order
-  const { data: tokens } = await supabase
+  const { data: tokens } = await adminSupabase
     .from("download_tokens")
     .select("product_id, expires_at")
     .eq("order_id", order.id);
@@ -75,8 +77,6 @@ async function loadOrderForSession(sessionId: string) {
     (tokens ?? []).map((t) => [t.product_id, t.expires_at])
   );
 
-  // Generate signed URLs using admin client (bypasses RLS — user already verified above)
-  const adminSupabase = createAdminClient();
   // Generate signed URLs for each product file
   const bucket = process.env.SUPABASE_STORAGE_BUCKET || "product-files";
   const downloads: DownloadItem[] = await Promise.all(
