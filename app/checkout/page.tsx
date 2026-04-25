@@ -1,18 +1,63 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
-import Link from 'next/link';
-import { ArrowLeft, Lock, CreditCard } from 'lucide-react';
-import { useBundleStore } from '@/lib/store/bundle-store';
-import { BundleSummary } from '@/components/bundle-summary';
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { ArrowLeft, Lock, CreditCard } from "lucide-react";
+import { useBundleStore } from "@/lib/store/bundle-store";
+import { BundleSummary } from "@/components/bundle-summary";
+import { createClient } from "@/lib/supabase/client";
 
 export default function CheckoutPage() {
+  const router = useRouter();
+  const supabase = createClient();
   const [mounted, setMounted] = useState(false);
+  const [authChecked, setAuthChecked] = useState(false);
+  const [signedIn, setSignedIn] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
   const items = useBundleStore((s) => s.items);
 
   useEffect(() => {
     setMounted(true);
-  }, []);
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      setSignedIn(!!user);
+      setAuthChecked(true);
+    });
+  }, [supabase]);
+
+  const handleCheckout = async () => {
+    setError(null);
+    setLoading(true);
+
+    try {
+      const productIds = items.map((i) => i.product_id);
+      const res = await fetch("/api/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ productIds }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError(data.error || "Checkout failed.");
+        setLoading(false);
+        return;
+      }
+
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        setError("Could not start checkout.");
+        setLoading(false);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Network error.");
+      setLoading(false);
+    }
+  };
 
   if (!mounted) {
     return (
@@ -68,20 +113,43 @@ export default function CheckoutPage() {
           <aside className="rounded-2xl bg-white p-5 shadow-card h-fit">
             <BundleSummary />
 
+            {!signedIn && authChecked && (
+              <div className="mt-4 rounded-lg bg-electric-50 p-3 text-xs text-navy-700">
+                You'll need an account to complete checkout and access your downloads.
+              </div>
+            )}
+
+            {error && (
+              <div className="mt-4 rounded-lg bg-red-50 border border-red-200 p-3 text-xs text-red-700">
+                {error}
+              </div>
+            )}
+
             <button
-              disabled
-              className="mt-5 flex w-full items-center justify-center gap-2 rounded-full bg-navy-400 px-5 py-3 text-sm font-semibold text-bone-50 cursor-not-allowed"
+              type="button"
+              onClick={
+                signedIn
+                  ? handleCheckout
+                  : () => router.push("/login?next=/checkout")
+              }
+              disabled={loading || !authChecked}
+              className="mt-5 flex w-full items-center justify-center gap-2 rounded-full bg-navy-900 px-5 py-3 text-sm font-semibold text-bone-50 hover:bg-navy-800 disabled:bg-navy-400 disabled:cursor-not-allowed"
             >
-              <CreditCard className="h-4 w-4" />
-              Pay with Card
+              {loading ? (
+                "Redirecting to Stripe…"
+              ) : signedIn ? (
+                <>
+                  <CreditCard className="h-4 w-4" />
+                  Pay with Card
+                </>
+              ) : (
+                "Sign in to continue"
+              )}
             </button>
 
-            <div className="mt-4 rounded-lg bg-electric-50 p-3 text-xs text-electric-800">
-              <div className="mb-1 flex items-center gap-1.5 font-semibold">
-                <Lock className="h-3.5 w-3.5" />
-                Coming in Phase 4
-              </div>
-              Stripe checkout, account creation, and instant download delivery will be wired up in the next build phase.
+            <div className="mt-3 flex items-center justify-center gap-1.5 text-xs text-navy-500">
+              <Lock className="h-3 w-3" />
+              Secure checkout powered by Stripe
             </div>
           </aside>
         </div>
