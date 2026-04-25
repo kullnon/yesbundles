@@ -1,10 +1,10 @@
-// middleware.ts (goes at project root, NOT inside app/)
+// middleware.ts (project root)
 // Refreshes the Supabase auth session on every request. Required for SSR auth.
 
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 
-export async function proxy(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   let response = NextResponse.next({ request });
 
   const supabase = createServerClient(
@@ -35,7 +35,7 @@ export async function proxy(request: NextRequest) {
 
   // Protect checkout + account routes
   const protectedPaths = ['/checkout', '/account', '/success'];
-  const isProtected = protectedPaths.some(p =>
+  const isProtected = protectedPaths.some((p) =>
     request.nextUrl.pathname.startsWith(p)
   );
 
