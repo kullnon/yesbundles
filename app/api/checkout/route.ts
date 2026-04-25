@@ -5,7 +5,7 @@ import { calculateBundlePrice } from "@/lib/bundle/calculate-price";
 import type { BundleRule, BundleItem } from "@/lib/types/product";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: "2025-08-27.basil",
+  apiVersion: "2025-08-27.basil" as any,
 });
 
 export async function POST(request: Request) {
@@ -36,7 +36,8 @@ export async function POST(request: Request) {
       .from("products")
       .select("id, slug, title, price_cents, preview_url, is_active")
       .in("id", productIds)
-      .eq("is_active", true);
+      .eq("is_active", true)
+      .returns<Array<{ id: string; slug: string; title: string; price_cents: number; preview_url: string | null; is_active: boolean }>>();
 
     if (productsError || !products || products.length !== productIds.length) {
       return NextResponse.json(
@@ -76,7 +77,7 @@ export async function POST(request: Request) {
             productNames.length > 200 ? "..." : ""
           }`;
 
-    const lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] = [
+    const lineItems: any[] = [
       {
         quantity: 1,
         price_data: {

@@ -18,7 +18,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const supabase = await createClient();
   const { data } = await supabase
     .from('products')
-    .select('title, tagline, description')
+    .select("title, description")
     .eq('slug', slug)
     .maybeSingle();
 
@@ -26,7 +26,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   return {
     title: `${data.title} — YesBundles`,
-    description: data.tagline ?? data.description ?? undefined,
+    description: data.description ?? undefined,
   };
 }
 
@@ -78,9 +78,6 @@ export default async function ProductPage({ params }: Props) {
           <h1 className="mb-2 text-3xl font-bold tracking-tight text-navy-900 sm:text-4xl">
             {product.title}
           </h1>
-          {product.tagline && (
-            <p className="mb-6 text-lg text-navy-600">{product.tagline}</p>
-          )}
 
           <div className="mb-6 flex flex-wrap gap-4 text-sm text-navy-600">
             {product.page_count && (

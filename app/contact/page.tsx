@@ -17,7 +17,7 @@ export default function ContactPage() {
 
       <div className="space-y-4">
         
-          href="mailto:hello@yesbundles.com"
+        <a href="mailto:hello@yesbundles.com"
           className="group flex items-start gap-4 rounded-2xl border border-navy-100 bg-white p-5 shadow-card transition-all hover:shadow-card-hover hover:-translate-y-0.5"
         >
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-electric-100 text-electric-700">
