@@ -34,7 +34,7 @@ export async function middleware(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   // Protect checkout + account routes
-  const protectedPaths = ['/checkout', '/account', '/success'];
+  const protectedPaths = ['/checkout', '/account'];
   const isProtected = protectedPaths.some((p) =>
     request.nextUrl.pathname.startsWith(p)
   );
