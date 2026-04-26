@@ -102,6 +102,7 @@ export async function POST(request: Request) {
       line_items: lineItems,
       customer_email: user.email,
       metadata: {
+        site: "yesbundles",
         user_id: user.id,
         product_ids: productIds.join(","),
         item_count: String(itemCount),
