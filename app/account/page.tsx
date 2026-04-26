@@ -49,8 +49,13 @@ export default async function AccountPage() {
     redirect("/login?next=/account");
   }
 
+  // Use admin client for the orders query — page already verified user above
+  // and filters by user_id, so admin access is safe. Critical: bypasses RLS so
+  // bonus product (is_active=false) joins correctly. Same pattern as success page.
+  const adminSupabase = createAdminClient();
+
   // Fetch all of this user's orders, joined to order_items + products
-  const { data: orders, error } = await supabase
+  const { data: orders, error } = await adminSupabase
     .from("orders")
     .select(
       `
@@ -81,8 +86,6 @@ export default async function AccountPage() {
 
   const bucket = process.env.SUPABASE_STORAGE_BUCKET || "product-files";
 
-  // Generate signed URLs using admin client (bypasses RLS — user already verified above)
-  const adminSupabase = createAdminClient();
   // Generate signed URLs for every product file across every order
   const enriched: OrderForView[] = await Promise.all(
     ((orders ?? []) as OrderRow[]).map(async (order) => {
