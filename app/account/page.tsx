@@ -34,6 +34,7 @@ type OrderForView = {
     title: string;
     slug: string;
     signedUrl: string | null;
+    isBonus: boolean;
   }[];
 };
 
@@ -104,9 +105,18 @@ export default async function AccountPage() {
             title: product?.title ?? "Untitled product",
             slug: product?.slug ?? "",
             signedUrl,
+            // Bonus items are granted by the webhook with unit_price_cents = 0.
+            // No real product is sold for $0, so this is a safe & clean marker.
+            isBonus: item.unit_price_cents === 0,
           };
         })
       );
+
+      // Sort: paid items first, bonuses at the end (visual priority)
+      itemsWithUrls.sort((a, b) => {
+        if (a.isBonus === b.isBonus) return 0;
+        return a.isBonus ? 1 : -1;
+      });
 
       return {
         id: order.id,
@@ -183,20 +193,42 @@ export default async function AccountPage() {
                     {order.items.map((item) => (
                       <div
                         key={item.productId}
-                        className="flex items-center justify-between gap-4 p-3 rounded-lg bg-bone-50"
+                        className={
+                          item.isBonus
+                            ? "flex items-center justify-between gap-4 p-3 rounded-lg border border-emerald-300 bg-gradient-to-r from-emerald-50 to-bone-50"
+                            : "flex items-center justify-between gap-4 p-3 rounded-lg bg-bone-50"
+                        }
                       >
-                        <p className="font-medium text-navy-900 truncate">
-                          {item.title}
-                        </p>
+                        <div className="min-w-0">
+                          {item.isBonus && (
+                            <span className="inline-flex items-center gap-1 text-xs font-bold uppercase tracking-wide text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full mb-1">
+                              🎁 Free bonus
+                            </span>
+                          )}
+                          <p className="font-medium text-navy-900 truncate">
+                            {item.title}
+                          </p>
+                        </div>
                         {item.signedUrl ? (
-                          
-                            <a href={item.signedUrl}
-  				target="_blank"
-  				rel="noopener noreferrer"
-  				className="shrink-0 text-electric-600 font-semibold 						hover:underline text-sm"
-			    >
-  				Download
-			    </a>
+                          item.isBonus ? (
+                            <a
+                              href={item.signedUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="shrink-0 bg-emerald-600 text-bone-50 font-semibold py-1.5 px-3 rounded-lg hover:bg-emerald-700 transition text-sm"
+                            >
+                              Download
+                            </a>
+                          ) : (
+                            <a
+                              href={item.signedUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="shrink-0 text-electric-600 font-semibold hover:underline text-sm"
+                            >
+                              Download
+                            </a>
+                          )
                         ) : (
                           <span className="shrink-0 text-sm text-navy-500 italic">
                             Unavailable
