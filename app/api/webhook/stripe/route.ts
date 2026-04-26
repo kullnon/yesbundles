@@ -6,6 +6,13 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: "2025-08-27.basil" as any,
 });
 
+// Bonus product configuration
+// Granted automatically when a buyer purchases 7+ items in a single order.
+// Currently is_active=false in the products table, but admin client reads
+// bypass that, and download_tokens / order_items don't care about is_active.
+const BONUS_PRODUCT_SLUG = "passive-income-engine";
+const BONUS_THRESHOLD = 7;
+
 function getServiceClient() {
   return createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -173,6 +180,85 @@ export async function POST(request: Request) {
   if (tokensError) {
     console.error("Failed to insert download_tokens:", tokensError);
     // Don't return 500 — order succeeded; tokens can be regenerated from /account
+  }
+
+  // ──────────────────────────────────────────────────────────────────
+  // Bonus product auto-grant
+  // When productIds.length >= BONUS_THRESHOLD, grant the bonus product
+  // by inserting a $0 order_items row + a download_tokens row.
+  // Failures here are logged but do NOT fail the webhook — the paid
+  // order is already recorded successfully.
+  // ──────────────────────────────────────────────────────────────────
+  if (productIds.length >= BONUS_THRESHOLD) {
+    try {
+      const { data: bonusProduct, error: bonusFetchError } = await supabase
+        .from("products")
+        .select("id")
+        .eq("slug", BONUS_PRODUCT_SLUG)
+        .maybeSingle();
+
+      if (bonusFetchError) {
+        console.error("Bonus: failed to fetch bonus product:", bonusFetchError);
+      } else if (!bonusProduct) {
+        console.error(
+          `Bonus: product with slug "${BONUS_PRODUCT_SLUG}" not found. ` +
+            `Skipping bonus grant for order ${order.id}.`
+        );
+      } else {
+        // Guard against double-granting (e.g., webhook retry edge case)
+        const { data: existingBonusItem } = await supabase
+          .from("order_items")
+          .select("id")
+          .eq("order_id", order.id)
+          .eq("product_id", bonusProduct.id)
+          .maybeSingle();
+
+        if (existingBonusItem) {
+          console.log(
+            `Bonus: order ${order.id} already has bonus item. Skipping.`
+          );
+        } else {
+          const { error: bonusItemError } = await supabase
+            .from("order_items")
+            .insert({
+              order_id: order.id,
+              product_id: bonusProduct.id,
+              unit_price_cents: 0,
+            });
+
+          if (bonusItemError) {
+            console.error(
+              "Bonus: failed to insert bonus order_item:",
+              bonusItemError
+            );
+          } else {
+            const { error: bonusTokenError } = await supabase
+              .from("download_tokens")
+              .insert({
+                order_id: order.id,
+                product_id: bonusProduct.id,
+                user_id: userId,
+                expires_at: expiresAt,
+              });
+
+            if (bonusTokenError) {
+              console.error(
+                "Bonus: failed to insert bonus download_token:",
+                bonusTokenError
+              );
+            } else {
+              console.log(
+                `Bonus: granted "${BONUS_PRODUCT_SLUG}" to order ${order.id} ` +
+                  `(${productIds.length} items >= threshold of ${BONUS_THRESHOLD}).`
+              );
+            }
+          }
+        }
+      }
+    } catch (bonusErr) {
+      // Catch-all so a bonus failure never poisons a successful order
+      console.error("Bonus: unexpected error in bonus grant:", bonusErr);
+    }
   }
 
   console.log(`Order ${order.id} recorded for user ${userId}.`);

@@ -2,11 +2,17 @@
 
 import { useEffect } from 'react';
 import Link from 'next/link';
-import { X, Trash2, ShoppingBag, ArrowRight } from 'lucide-react';
+import { X, Trash2, ShoppingBag, ArrowRight, Gift, CheckCircle2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useBundleStore } from '@/lib/store/bundle-store';
 import { formatPrice } from '@/lib/utils';
 import { BundleSummary } from './bundle-summary';
+
+// Bonus product UX configuration
+// Mirrors BONUS_THRESHOLD on the server (app/api/webhook/stripe/route.ts).
+// If you change one, change the other.
+const BONUS_THRESHOLD = 7;
+const BONUS_TITLE = 'The Passive Income Engine';
 
 export function BundleDrawer() {
   const isOpen = useBundleStore((s) => s.isOpen);
@@ -23,6 +29,15 @@ export function BundleDrawer() {
       document.body.style.overflow = prev;
     };
   }, [isOpen]);
+
+  // Bonus nudge state — three buckets
+  // 0–4 items: nothing (too early to push)
+  // 5 or 6 items: "X more to unlock" nudge
+  // 7+ items: "unlocked" confirmation
+  const itemCount = items.length;
+  const showNudge = itemCount >= 5 && itemCount < BONUS_THRESHOLD;
+  const showUnlocked = itemCount >= BONUS_THRESHOLD;
+  const itemsAway = BONUS_THRESHOLD - itemCount;
 
   return (
     <AnimatePresence>
@@ -115,6 +130,50 @@ export function BundleDrawer() {
 
             {items.length > 0 && (
               <div className="border-t border-navy-100 bg-white px-5 py-4">
+                {/* Bonus nudge — appears between items list and summary */}
+                {showNudge && (
+                  <div
+                    role="status"
+                    className="mb-3 flex items-start gap-3 rounded-xl border border-electric-200 bg-electric-50 px-4 py-3"
+                  >
+                    <Gift
+                      className="mt-0.5 h-5 w-5 shrink-0 text-electric-700"
+                      strokeWidth={2}
+                    />
+                    <div className="text-sm leading-snug">
+                      <p className="font-semibold text-navy-900">
+                        Add {itemsAway} more to unlock a free bonus
+                      </p>
+                      <p className="mt-0.5 text-navy-700">
+                        Reach {BONUS_THRESHOLD} items and we&apos;ll add{' '}
+                        <span className="font-semibold">{BONUS_TITLE}</span> to your
+                        order at no extra cost.
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {showUnlocked && (
+                  <div
+                    role="status"
+                    className="mb-3 flex items-start gap-3 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3"
+                  >
+                    <CheckCircle2
+                      className="mt-0.5 h-5 w-5 shrink-0 text-emerald-700"
+                      strokeWidth={2}
+                    />
+                    <div className="text-sm leading-snug">
+                      <p className="font-semibold text-emerald-900">
+                        Bonus unlocked
+                      </p>
+                      <p className="mt-0.5 text-emerald-800">
+                        <span className="font-semibold">{BONUS_TITLE}</span> will be
+                        added to your order automatically.
+                      </p>
+                    </div>
+                  </div>
+                )}
+
                 <BundleSummary />
                 <div className="mt-4 flex gap-2">
                   <button

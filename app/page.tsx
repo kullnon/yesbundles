@@ -5,6 +5,13 @@ import type { Product, Category } from '@/lib/types/product';
 
 export const revalidate = 60;
 
+// Bonus product copy — kept in sync with the bundle drawer + webhook.
+// If you change the threshold here, change it in:
+//   - components/bundle-drawer.tsx (BONUS_THRESHOLD)
+//   - app/api/webhook/stripe/route.ts (BONUS_THRESHOLD)
+const BONUS_THRESHOLD = 7;
+const BONUS_TITLE = 'The Passive Income Engine';
+
 type PageProps = {
   searchParams: Promise<{ category?: string }>;
 };
@@ -51,6 +58,27 @@ export default async function HomePage({ searchParams }: PageProps) {
         <p className="text-lg text-navy-600">
           Hand-crafted templates, trackers, and guides. Add 3+ to your bundle and save automatically.
         </p>
+      </section>
+
+      {/* Bonus banner — sits between hero and category filter */}
+      <section className="mb-8">
+        <div className="flex items-start gap-3 rounded-2xl border border-electric-200 bg-gradient-to-r from-electric-50 to-bone-50 px-5 py-4 sm:items-center">
+          <span
+            aria-hidden="true"
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-electric-100 text-xl"
+          >
+            🎁
+          </span>
+          <div className="text-sm leading-snug sm:text-base">
+            <p className="font-bold text-navy-900">
+              Bundle {BONUS_THRESHOLD} items, get {BONUS_TITLE} free.
+            </p>
+            <p className="mt-0.5 text-navy-700">
+              Reach {BONUS_THRESHOLD}{" "}items in a single order and we&apos;ll add the bonus
+              guide to your downloads at no extra cost.
+            </p>
+          </div>
+        </div>
       </section>
 
       <section className="mb-8">
