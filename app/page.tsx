@@ -13,26 +13,34 @@ export default async function HomePage({ searchParams }: PageProps) {
   const { category } = await searchParams;
   const supabase = await createClient();
 
-  const { data: categoriesData } = await supabase
-    .from('categories')
-    .select('*')
-    .order('sort_order', { ascending: true });
-
-  const categories = (categoriesData ?? []) as Category[];
-
-  let query = supabase
+  const { data: productsData, error } = await supabase
     .from('products')
     .select('*, category:categories(*)')
     .eq('is_active', true)
     .order('created_at', { ascending: false });
 
-  if (category) {
-    const cat = categories.find((c) => c.slug === category);
-    if (cat) query = query.eq('category_id', cat.id);
-  }
+  const allProducts = (productsData ?? []) as Product[];
 
-  const { data: productsData, error } = await query;
-  const products = (productsData ?? []) as Product[];
+  const stockedCategoryIds = new Set(
+    allProducts.map((p) => p.category_id).filter(Boolean)
+  );
+
+  const { data: categoriesData } = await supabase
+    .from('categories')
+    .select('*')
+    .order('sort_order', { ascending: true });
+
+  const categories = ((categoriesData ?? []) as Category[]).filter((c) =>
+    stockedCategoryIds.has(c.id)
+  );
+
+  const activeCategory = category
+    ? categories.find((c) => c.slug === category)
+    : null;
+
+  const products = activeCategory
+    ? allProducts.filter((p) => p.category_id === activeCategory.id)
+    : [];
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
@@ -46,26 +54,30 @@ export default async function HomePage({ searchParams }: PageProps) {
       </section>
 
       <section className="mb-8">
-        <CategoryFilter categories={categories} />
+        <CategoryFilter categories={categories} activeSlug={category ?? null} />
       </section>
 
-      {error && (
-        <div className="rounded-xl bg-red-50 p-4 text-sm text-red-800">
-          Error loading products: {error.message}
-        </div>
-      )}
+      {activeCategory && (
+        <>
+          {error && (
+            <div className="rounded-xl bg-red-50 p-4 text-sm text-red-800">
+              Error loading products: {error.message}
+            </div>
+          )}
 
-      {!error && products.length === 0 && (
-        <div className="rounded-xl bg-bone-100 p-8 text-center text-navy-600">
-          No products in this category yet.
-        </div>
-      )}
+          {!error && products.length === 0 && (
+            <div className="rounded-xl bg-bone-100 p-8 text-center text-navy-600">
+              No products in this category yet.
+            </div>
+          )}
 
-      <section className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
-        {products.map((product, i) => (
-          <ProductCard key={product.id} product={product} index={i} />
-        ))}
-      </section>
+          <section className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+            {products.map((product, i) => (
+              <ProductCard key={product.id} product={product} index={i} />
+            ))}
+          </section>
+        </>
+      )}
     </div>
   );
 }
