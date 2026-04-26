@@ -10,6 +10,7 @@ type DownloadItem = {
   title: string;
   signedUrl: string | null;
   expiresAt: string;
+  isBonus: boolean;
 };
 
 async function loadOrderForSession(sessionId: string) {
@@ -100,9 +101,18 @@ async function loadOrderForSession(sessionId: string) {
         title: product?.title ?? "Untitled product",
         signedUrl,
         expiresAt,
+        // Items granted by the webhook bonus block have unit_price_cents = 0.
+        // No real product is sold for $0, so this is a safe & clean marker.
+        isBonus: item.unit_price_cents === 0,
       };
     })
   );
+
+  // Sort: paid items first, bonus items at the end (visual priority)
+  downloads.sort((a, b) => {
+    if (a.isBonus === b.isBonus) return 0;
+    return a.isBonus ? 1 : -1;
+  });
 
   return { order, downloads };
 }
@@ -220,19 +230,39 @@ export default async function SuccessPage({
             {downloads.map((d) => (
               <div
                 key={d.productId}
-                className="flex items-center justify-between gap-4 p-4 rounded-lg border border-navy-100 bg-bone-50"
+                className={
+                  d.isBonus
+                    ? "flex items-center justify-between gap-4 p-4 rounded-lg border-2 border-emerald-300 bg-gradient-to-r from-emerald-50 to-bone-50 relative"
+                    : "flex items-center justify-between gap-4 p-4 rounded-lg border border-navy-100 bg-bone-50"
+                }
               >
                 <div className="min-w-0">
+                  {d.isBonus && (
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="inline-flex items-center gap-1 text-xs font-bold uppercase tracking-wide text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full">
+                        🎁 Free bonus
+                      </span>
+                    </div>
+                  )}
                   <p className="font-semibold text-navy-900 truncate">
                     {d.title}
                   </p>
+                  {d.isBonus && (
+                    <p className="text-xs text-emerald-700 mt-0.5">
+                      Included free with your 7-item bundle
+                    </p>
+                  )}
                 </div>
                 {d.signedUrl ? (
                   <a
                     href={d.signedUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="shrink-0 bg-navy-900 text-bone-50 font-semibold py-2 px-4 rounded-lg hover:bg-navy-800 transition"
+                    className={
+                      d.isBonus
+                        ? "shrink-0 bg-emerald-600 text-bone-50 font-semibold py-2 px-4 rounded-lg hover:bg-emerald-700 transition"
+                        : "shrink-0 bg-navy-900 text-bone-50 font-semibold py-2 px-4 rounded-lg hover:bg-navy-800 transition"
+                    }
                   >
                     Download
                   </a>
