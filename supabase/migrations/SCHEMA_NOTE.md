@@ -1,0 +1,1 @@
+The real database schema for this project lives in the Supabase dashboard and has not yet been exported here. To export: npx supabase db dump --schema public > 0001_initial_schema.sql (requires Supabase CLI auth). The 0002_category_groups.sql migration in this folder IS valid SQL and was applied on top of the dashboard-defined schema.

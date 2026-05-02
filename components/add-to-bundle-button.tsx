@@ -35,7 +35,7 @@ export function AddToBundleButton({ product, size = 'md', className }: Props) {
         slug: product.slug,
         title: product.title,
         price_cents: product.price_cents,
-        preview_image_url: product.preview_image_url,
+        preview_url: product.preview_url,
       });
       setJustAdded(true);
       setTimeout(() => setJustAdded(false), 600);

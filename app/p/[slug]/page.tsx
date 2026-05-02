@@ -56,9 +56,9 @@ export default async function ProductPage({ params }: Props) {
 
       <div className="grid gap-8 md:grid-cols-2">
         <div className="relative aspect-[4/3] overflow-hidden rounded-2xl bg-gradient-to-br from-navy-50 to-electric-50 shadow-card">
-          {product.preview_image_url ? (
+          {product.preview_url ? (
             <img
-              src={product.preview_image_url}
+              src={product.preview_url}
               alt={product.title}
               className="h-full w-full object-cover"
             />

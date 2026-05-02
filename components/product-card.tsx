@@ -22,9 +22,9 @@ export function ProductCard({ product, index = 0 }: Props) {
     >
       <Link href={`/p/${product.slug}`} className="block">
         <div className="relative aspect-[4/3] overflow-hidden bg-gradient-to-br from-navy-50 to-electric-50">
-          {product.preview_image_url ? (
+          {product.preview_url ? (
             <img
-              src={product.preview_image_url}
+              src={product.preview_url}
               alt={product.title}
               className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
             />

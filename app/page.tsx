@@ -47,7 +47,7 @@ export default async function HomePage({ searchParams }: PageProps) {
 
   const products = activeCategory
     ? allProducts.filter((p) => p.category_id === activeCategory.id)
-    : [];
+    : allProducts;
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
@@ -85,27 +85,23 @@ export default async function HomePage({ searchParams }: PageProps) {
         <CategoryFilter categories={categories} activeSlug={category ?? null} />
       </section>
 
-      {activeCategory && (
-        <>
-          {error && (
-            <div className="rounded-xl bg-red-50 p-4 text-sm text-red-800">
-              Error loading products: {error.message}
-            </div>
-          )}
-
-          {!error && products.length === 0 && (
-            <div className="rounded-xl bg-bone-100 p-8 text-center text-navy-600">
-              No products in this category yet.
-            </div>
-          )}
-
-          <section className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
-            {products.map((product, i) => (
-              <ProductCard key={product.id} product={product} index={i} />
-            ))}
-          </section>
-        </>
+      {error && (
+        <div className="rounded-xl bg-red-50 p-4 text-sm text-red-800">
+          Error loading products: {error.message}
+        </div>
       )}
+
+      {!error && products.length === 0 && (
+        <div className="rounded-xl bg-bone-100 p-8 text-center text-navy-600">
+          {activeCategory ? 'No products in this category yet.' : 'No products available yet.'}
+        </div>
+      )}
+
+      <section className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+        {products.map((product, i) => (
+          <ProductCard key={product.id} product={product} index={i} />
+        ))}
+      </section>
     </div>
   );
 }

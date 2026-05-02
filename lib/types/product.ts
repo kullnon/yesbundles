@@ -17,7 +17,7 @@ export type Product = {
   price_cents: number;
   category_id: string;
   category?: Category;
-  preview_image_url: string | null;
+  preview_url: string | null;
   file_path: string | null;
   file_size_mb: number | null;
   page_count: number | null;
@@ -50,5 +50,5 @@ export type BundleItem = {
   slug: string;
   title: string;
   price_cents: number;
-  preview_image_url: string | null;
+  preview_url: string | null;
 };

@@ -5,7 +5,7 @@ import { calculateBundlePrice } from "@/lib/bundle/calculate-price";
 import type { BundleRule, BundleItem } from "@/lib/types/product";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: "2025-08-27.basil" as any,
+  apiVersion: "2025-08-27.basil",
 });
 
 export async function POST(request: Request) {
@@ -59,7 +59,7 @@ export async function POST(request: Request) {
       slug: p.slug,
       title: p.title,
       price_cents: p.price_cents,
-      preview_image_url: p.preview_url ?? null,
+      preview_url: p.preview_url ?? null,
     }));
 
     const priceResult = calculateBundlePrice(items, bundleRule ?? null);

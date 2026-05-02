@@ -101,9 +101,9 @@ export function BundleDrawer() {
                       className="flex items-center gap-3 rounded-xl bg-white p-3 shadow-card"
                     >
                       <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-navy-50 to-electric-50">
-                        {item.preview_image_url ? (
+                        {item.preview_url ? (
                           <img
-                            src={item.preview_image_url}
+                            src={item.preview_url}
                             alt=""
                             className="h-full w-full rounded-lg object-cover"
                           />
