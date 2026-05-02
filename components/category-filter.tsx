@@ -28,7 +28,7 @@ export function CategoryFilter({ categories, activeSlug }: Props) {
       next.set('category', slug);
     }
     const qs = next.toString();
-    router.push(qs ? `/?${qs}` : '/');
+    router.push(qs ? `/?${qs}` : '/', { scroll: false });
   };
 
   const grouped = categories.reduce<Record<string, Category[]>>((acc, cat) => {
