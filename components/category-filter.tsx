@@ -29,6 +29,13 @@ export function CategoryFilter({ categories, activeSlug }: Props) {
     }
     const qs = next.toString();
     router.push(qs ? `/?${qs}` : '/', { scroll: false });
+
+    setTimeout(() => {
+      document.getElementById('products')?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start',
+      });
+    }, 100);
   };
 
   const grouped = categories.reduce<Record<string, Category[]>>((acc, cat) => {
