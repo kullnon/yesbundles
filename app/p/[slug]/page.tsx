@@ -33,7 +33,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   return {
     title: `${product.name} - $${price} | YesBundles`,
-    description: description.slice(0, 160), // Google's limit
+    description: description.slice(0, 160),
     openGraph: {
       title: product.name,
       description: description.slice(0, 160),
