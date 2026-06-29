@@ -1,13 +1,44 @@
 import Link from 'next/link';
-import { TrendingDown, ArrowRight, Sparkles } from 'lucide-react';
-import { APP_ROUTE, APP_NAME, APP_PRICE_CENTS } from '@/lib/apps/debt-escape/config';
+import { TrendingDown, Briefcase, ArrowRight, Sparkles } from 'lucide-react';
+import {
+  APP_ROUTE as DEBT_ROUTE,
+  APP_NAME as DEBT_NAME,
+  APP_PRICE_CENTS as DEBT_PRICE,
+} from '@/lib/apps/debt-escape/config';
+import {
+  APP_ROUTE as SALARY_ROUTE,
+  APP_NAME as SALARY_NAME,
+  APP_PRICE_CENTS as SALARY_PRICE,
+} from '@/lib/apps/salary-negotiation/config';
 
-// Homepage spotlight for the YesBundles Pro mini-apps. Currently surfaces the
-// one shipped app (Debt Escape Simulator). Uses the same card language as
-// ProductCard — rounded-2xl, shadow-card, hover lift, navy/electric gradient.
+// Homepage spotlight for the YesBundles Pro mini-apps. Uses the same card
+// language as ProductCard — rounded-2xl, shadow-card, hover lift, gradient
+// visual panel + category badge. Responsive: 2 columns on desktop, stacked
+// on mobile.
+const APPS = [
+  {
+    route: DEBT_ROUTE,
+    name: DEBT_NAME,
+    priceCents: DEBT_PRICE,
+    category: 'Finance',
+    blurb:
+      'Compare Snowball vs Avalanche, side by side — see your debt-free date and how much faster you escape with a little extra.',
+    cta: 'Open the simulator',
+    Icon: TrendingDown,
+  },
+  {
+    route: SALARY_ROUTE,
+    name: SALARY_NAME,
+    priceCents: SALARY_PRICE,
+    category: 'Career',
+    blurb:
+      'See how your offer compares to market, then get an AI counter-offer script, email reply, and rebuttals to every pushback.',
+    cta: 'Open the coach',
+    Icon: Briefcase,
+  },
+];
+
 export function ProApps() {
-  const price = `$${APP_PRICE_CENTS / 100}`;
-
   return (
     <section className="mb-10">
       <div className="mb-4 flex items-center gap-2">
@@ -18,40 +49,44 @@ export function ProApps() {
         </span>
       </div>
 
-      <article className="group flex flex-col overflow-hidden rounded-2xl bg-white shadow-card transition-all duration-300 hover:-translate-y-1 hover:shadow-card-hover sm:flex-row">
-        {/* Visual panel — mirrors the ProductCard gradient image area */}
-        <div className="relative flex aspect-[4/3] items-center justify-center bg-gradient-to-br from-navy-50 to-electric-50 sm:aspect-auto sm:w-2/5 sm:max-w-xs">
-          <TrendingDown className="h-20 w-20 text-electric-500" strokeWidth={1.5} />
-          <span className="absolute left-3 top-3 rounded-full bg-bone-50/90 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-navy-700 backdrop-blur-sm">
-            Finance
-          </span>
-        </div>
+      <div className="grid gap-4 sm:grid-cols-2">
+        {APPS.map(({ route, name, priceCents, category, blurb, cta, Icon }) => (
+          <article
+            key={route}
+            className="group flex flex-col overflow-hidden rounded-2xl bg-white shadow-card transition-all duration-300 hover:-translate-y-1 hover:shadow-card-hover"
+          >
+            {/* Visual panel — mirrors the ProductCard gradient image area */}
+            <div className="relative flex aspect-[16/7] items-center justify-center bg-gradient-to-br from-navy-50 to-electric-50">
+              <Icon className="h-16 w-16 text-electric-500" strokeWidth={1.5} />
+              <span className="absolute left-3 top-3 rounded-full bg-bone-50/90 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-navy-700 backdrop-blur-sm">
+                {category}
+              </span>
+            </div>
 
-        {/* Content */}
-        <div className="flex flex-1 flex-col p-5 sm:p-6">
-          <h3 className="mb-1 text-lg font-bold text-navy-900 transition-colors group-hover:text-electric-600 sm:text-xl">
-            {APP_NAME}
-          </h3>
-          <p className="mb-4 max-w-md text-sm text-navy-600 sm:text-base">
-            Compare Snowball vs Avalanche, side by side — see your debt-free date,
-            total interest, and how much faster you escape with a little extra.
-          </p>
+            {/* Content */}
+            <div className="flex flex-1 flex-col p-5">
+              <h3 className="mb-1 text-lg font-bold text-navy-900 transition-colors group-hover:text-electric-600">
+                {name}
+              </h3>
+              <p className="mb-4 text-sm text-navy-600">{blurb}</p>
 
-          <div className="mt-auto flex flex-wrap items-center justify-between gap-3 pt-2">
-            <span className="text-xl font-bold text-navy-900">
-              {price}
-              <span className="ml-1 text-xs font-medium text-navy-500">one-time</span>
-            </span>
-            <Link
-              href={APP_ROUTE}
-              className="inline-flex items-center gap-1.5 rounded-full bg-navy-900 px-5 py-2.5 text-sm font-semibold text-bone-50 transition hover:bg-navy-800"
-            >
-              Open the simulator
-              <ArrowRight className="h-4 w-4" />
-            </Link>
-          </div>
-        </div>
-      </article>
+              <div className="mt-auto flex flex-wrap items-center justify-between gap-3 pt-2">
+                <span className="text-xl font-bold text-navy-900">
+                  ${priceCents / 100}
+                  <span className="ml-1 text-xs font-medium text-navy-500">one-time</span>
+                </span>
+                <Link
+                  href={route}
+                  className="inline-flex items-center gap-1.5 rounded-full bg-navy-900 px-5 py-2.5 text-sm font-semibold text-bone-50 transition hover:bg-navy-800"
+                >
+                  {cta}
+                  <ArrowRight className="h-4 w-4" />
+                </Link>
+              </div>
+            </div>
+          </article>
+        ))}
+      </div>
     </section>
   );
 }
