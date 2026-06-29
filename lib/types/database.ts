@@ -100,6 +100,62 @@ export type Database = {
         Insert: Omit<Database['public']['Tables']['download_tokens']['Row'], 'id' | 'issued_at'>;
         Update: Partial<Database['public']['Tables']['download_tokens']['Insert']>;
       };
+      // ── Pro mini-apps (added June 9) ───────────────────────────────
+      // hero_apps: registry of the Pro apps. Primary key is `slug` (text).
+      // NOTE: slugs use underscores (e.g. "debt_escape") while routes use
+      // hyphens (e.g. "/apps/debt-escape"). There is no `id` or `price_cents`
+      // column — pricing lives in app/Stripe code.
+      hero_apps: {
+        Row: {
+          slug: string;
+          title: string;
+          description: string | null;
+          category: string | null;
+          icon_name: string | null;
+          route: string;
+          display_order: number;
+          is_active: boolean;
+          created_at: string;
+        };
+        Insert: Omit<Database['public']['Tables']['hero_apps']['Row'], 'created_at'> & {
+          created_at?: string;
+        };
+        Update: Partial<Database['public']['Tables']['hero_apps']['Insert']>;
+      };
+      // app_entitlements: a row here means `user_id` owns access to `app_slug`.
+      app_entitlements: {
+        Row: {
+          id: string;
+          user_id: string;
+          app_slug: string; // FK -> hero_apps.slug
+          bundle_type: string | null; // 'standalone' | 'pick3' | 'all5' | ...
+          order_id: string | null; // FK -> orders.id
+          granted_at: string;
+        };
+        Insert: Omit<Database['public']['Tables']['app_entitlements']['Row'], 'id' | 'granted_at'> & {
+          id?: string;
+          granted_at?: string;
+        };
+        Update: Partial<Database['public']['Tables']['app_entitlements']['Insert']>;
+      };
+      // pending_bundle_selections: a paid pick-N bundle awaiting app picks.
+      pending_bundle_selections: {
+        Row: {
+          id: string;
+          user_id: string;
+          order_id: string | null;
+          bundle_type: string;
+          picks_needed: number;
+          fulfilled: boolean;
+          fulfilled_at: string | null;
+          created_at: string;
+        };
+        Insert: Omit<Database['public']['Tables']['pending_bundle_selections']['Row'], 'id' | 'created_at'> & {
+          id?: string;
+          created_at?: string;
+        };
+        Update: Partial<Database['public']['Tables']['pending_bundle_selections']['Insert']>;
+      };
     };
   };
 };
@@ -110,3 +166,5 @@ export type Category = Database['public']['Tables']['categories']['Row'];
 export type BundleRule = Database['public']['Tables']['bundle_rules']['Row'];
 export type Order = Database['public']['Tables']['orders']['Row'];
 export type OrderItem = Database['public']['Tables']['order_items']['Row'];
+export type HeroApp = Database['public']['Tables']['hero_apps']['Row'];
+export type AppEntitlement = Database['public']['Tables']['app_entitlements']['Row'];

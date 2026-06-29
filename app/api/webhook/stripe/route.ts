@@ -59,6 +59,16 @@ export async function POST(request: Request) {
 
   const session = event.data.object as Stripe.Checkout.Session;
 
+  // ──────────────────────────────────────────────────────────────────
+  // Branch: Pro mini-app standalone purchase (product_type=app_standalone)
+  // Grants an app_entitlements row instead of download tokens. This MUST run
+  // before the download-token path below so we never try to read product_ids
+  // (apps aren't rows in the `products` table).
+  // ──────────────────────────────────────────────────────────────────
+  if (session.metadata?.product_type === "app_standalone") {
+    return handleAppStandalone(session);
+  }
+
   const userId = session.metadata?.user_id;
   const productIdsRaw = session.metadata?.product_ids;
   const subtotalCentsRaw = session.metadata?.subtotal_cents;
@@ -263,4 +273,109 @@ export async function POST(request: Request) {
 
   console.log(`Order ${order.id} recorded for user ${userId}.`);
   return NextResponse.json({ received: true, orderId: order.id });
+}
+
+// ──────────────────────────────────────────────────────────────────────
+// Pro mini-app standalone purchase handler.
+// Records a paid `orders` row (no order_items / download_tokens — apps aren't
+// in the `products` table) and grants an `app_entitlements` row keyed on
+// (user_id, app_slug). Idempotent on stripe_session_id.
+// ──────────────────────────────────────────────────────────────────────
+async function handleAppStandalone(session: Stripe.Checkout.Session) {
+  const userId = session.metadata?.user_id;
+  const appSlug = session.metadata?.app_slug;
+  const totalCents = parseInt(session.metadata?.total_cents ?? "0", 10);
+  const customerEmail =
+    session.customer_email ?? session.customer_details?.email ?? null;
+
+  if (!userId || !appSlug) {
+    console.error("App webhook missing metadata", session.metadata);
+    return NextResponse.json(
+      { error: "App order metadata incomplete." },
+      { status: 400 }
+    );
+  }
+  if (!customerEmail) {
+    console.error("App webhook missing customer email");
+    return NextResponse.json(
+      { error: "Customer email is required." },
+      { status: 400 }
+    );
+  }
+
+  const supabase = getServiceClient();
+
+  // Idempotency — has this session already been recorded?
+  const { data: existingOrder } = await supabase
+    .from("orders")
+    .select("id")
+    .eq("stripe_session_id", session.id)
+    .maybeSingle();
+
+  if (existingOrder) {
+    console.log(`App order for session ${session.id} already exists. Skipping.`);
+    return NextResponse.json({ received: true, idempotent: true });
+  }
+
+  // Record the order (ledger). Apps have no products/order_items rows.
+  const { data: order, error: orderError } = await supabase
+    .from("orders")
+    .insert({
+      user_id: userId,
+      status: "paid",
+      subtotal_cents: totalCents,
+      discount_cents: 0,
+      total_cents: totalCents,
+      bundle_rule_id: null,
+      stripe_session_id: session.id,
+      stripe_payment_intent: session.payment_intent as string,
+      customer_email: customerEmail,
+      paid_at: new Date().toISOString(),
+    })
+    .select("id")
+    .single();
+
+  if (orderError || !order) {
+    console.error("Failed to insert app order:", orderError);
+    return NextResponse.json(
+      { error: "Failed to record app order." },
+      { status: 500 }
+    );
+  }
+
+  // Guard against a double-grant (e.g. a manual replay after the order row
+  // was deleted) — entitlement is keyed on (user_id, app_slug).
+  const { data: existingEnt } = await supabase
+    .from("app_entitlements")
+    .select("id")
+    .eq("user_id", userId)
+    .eq("app_slug", appSlug)
+    .maybeSingle();
+
+  if (existingEnt) {
+    console.log(
+      `Entitlement for user ${userId} + ${appSlug} already exists. Order ${order.id} recorded.`
+    );
+    return NextResponse.json({ received: true, orderId: order.id, idempotent: "entitlement" });
+  }
+
+  const { error: entError } = await supabase.from("app_entitlements").insert({
+    user_id: userId,
+    app_slug: appSlug,
+    bundle_type: "standalone",
+    order_id: order.id,
+  });
+
+  if (entError) {
+    console.error("Failed to insert app_entitlements:", entError);
+    return NextResponse.json(
+      { error: "Failed to grant app entitlement." },
+      { status: 500 }
+    );
+  }
+
+  console.log(
+    `App entitlement granted: user ${userId} -> ${appSlug} (order ${order.id}).`
+  );
+  return NextResponse.json({ received: true, orderId: order.id, entitlement: appSlug });
 }
