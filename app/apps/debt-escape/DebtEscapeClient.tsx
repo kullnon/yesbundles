@@ -228,7 +228,7 @@ export default function DebtEscapeClient({
   }
 
   return (
-    <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
+    <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6 lg:px-8">
       {/* Header */}
       <div className="mb-8">
         <div className="mb-3 inline-flex items-center gap-1.5 rounded-full bg-electric-50 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-electric-700">
@@ -269,9 +269,9 @@ export default function DebtEscapeClient({
         </div>
       )}
 
-      <div className="grid gap-6 lg:grid-cols-5">
+      <div className="space-y-6">
         {/* ── Inputs ─────────────────────────────────────────────── */}
-        <section className="lg:col-span-3">
+        <section>
           <div className="rounded-2xl bg-white p-5 shadow-card">
             <div className="mb-4 flex items-center justify-between">
               <h2 className="text-lg font-bold text-navy-900">Your debts</h2>
@@ -298,7 +298,7 @@ export default function DebtEscapeClient({
                     placeholder="Visa"
                     value={r.name}
                     onChange={(e) => updateRow(r.id, { name: e.target.value })}
-                    className="col-span-2 rounded-lg border border-navy-200 bg-bone-50 px-3 py-2 text-sm text-navy-900 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-electric-500 sm:col-span-1"
+                    className="col-span-2 min-w-0 w-full rounded-lg border border-navy-200 bg-bone-50 px-3 py-2 text-sm text-navy-900 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-electric-500 sm:col-span-1"
                   />
                   <input
                     aria-label="Balance"
@@ -308,7 +308,7 @@ export default function DebtEscapeClient({
                     onChange={(e) =>
                       updateRow(r.id, { balance: e.target.value })
                     }
-                    className="rounded-lg border border-navy-200 bg-bone-50 px-3 py-2 text-sm text-navy-900 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-electric-500"
+                    className="min-w-0 w-full rounded-lg border border-navy-200 bg-bone-50 px-3 py-2 text-sm text-navy-900 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-electric-500"
                   />
                   <input
                     aria-label="APR"
@@ -316,7 +316,7 @@ export default function DebtEscapeClient({
                     placeholder="APR"
                     value={r.apr}
                     onChange={(e) => updateRow(r.id, { apr: e.target.value })}
-                    className="rounded-lg border border-navy-200 bg-bone-50 px-3 py-2 text-sm text-navy-900 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-electric-500"
+                    className="min-w-0 w-full rounded-lg border border-navy-200 bg-bone-50 px-3 py-2 text-sm text-navy-900 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-electric-500"
                   />
                   <input
                     aria-label="Minimum payment"
@@ -326,7 +326,7 @@ export default function DebtEscapeClient({
                     onChange={(e) =>
                       updateRow(r.id, { minPayment: e.target.value })
                     }
-                    className="rounded-lg border border-navy-200 bg-bone-50 px-3 py-2 text-sm text-navy-900 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-electric-500"
+                    className="min-w-0 w-full rounded-lg border border-navy-200 bg-bone-50 px-3 py-2 text-sm text-navy-900 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-electric-500"
                   />
                   <button
                     type="button"
@@ -380,7 +380,7 @@ export default function DebtEscapeClient({
         </section>
 
         {/* ── Results ─────────────────────────────────────────────── */}
-        <section className="lg:col-span-2">
+        <section>
           {!result || !best ? (
             <div className="rounded-2xl border border-dashed border-navy-200 bg-white p-8 text-center text-navy-500 shadow-card">
               Enter at least one debt with a balance and minimum payment to see
