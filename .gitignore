@@ -45,3 +45,6 @@ upload-products.mjs
 
 # Claude Code local config
 .claude/
+
+# supabase CLI
+supabase/.temp

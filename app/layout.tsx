@@ -5,6 +5,7 @@ import { Header } from '@/components/header';
 import { Footer } from '@/components/footer';
 import { BundleDrawer } from '@/components/bundle-drawer';
 import { MobileFAB } from '@/components/mobile-fab';
+import { AdSense } from '@/components/adsense';
 export const metadata: Metadata = {
   title: 'YesBundles — Templates, Trackers & Guides',
   description:
@@ -17,15 +18,13 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <head>
-        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6610691391899378" crossOrigin="anonymous"></script>
-      </head>
       <body className="flex min-h-screen flex-col antialiased">
         <Header />
         <main className="flex-1">{children}</main>
         <Footer />
         <BundleDrawer />
         <MobileFAB />
+        <AdSense />
         <Analytics />
       </body>
     </html>
