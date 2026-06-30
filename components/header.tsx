@@ -51,6 +51,12 @@ export function Header() {
         </Link>
 
         <div className="flex items-center gap-3 sm:gap-4">
+          <Link
+            href="/blog"
+            className="text-sm font-medium text-navy-700 hover:text-navy-900 hover:underline"
+          >
+            Blog
+          </Link>
           {!loading && email ? (
             <>
               <Link
