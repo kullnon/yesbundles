@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { ProductCard } from '@/components/product-card';
 import { ProApps } from '@/components/pro-apps';
+import { LatestBlog } from '@/components/latest-blog';
 import { CategoryFilter } from '@/components/category-filter';
 import type { Product, Category } from '@/lib/types/product';
 
@@ -94,6 +95,9 @@ export default async function HomePage({ searchParams }: PageProps) {
 
       {/* Pro Apps spotlight — interactive paid mini-apps, above the product grid */}
       <ProApps />
+
+      {/* Latest from the blog — 3 most recent posts, between Pro Apps and Featured */}
+      <LatestBlog />
 
       {featuredProducts.length > 0 && (
         <section className="mb-10">
