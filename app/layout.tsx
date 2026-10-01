@@ -6,10 +6,16 @@ import { Footer } from '@/components/footer';
 import { BundleDrawer } from '@/components/bundle-drawer';
 import { MobileFAB } from '@/components/mobile-fab';
 import { AdSense } from '@/components/adsense';
+import { SWRegister } from '@/components/sw-register';
 export const metadata: Metadata = {
   title: 'YesBundles — Templates, Trackers & Guides',
   description:
     'Build your own bundle of digital PDFs and spreadsheets across career, travel, finance, health, and business. Instant download, lifetime access.',
+  manifest: '/manifest.webmanifest',
+  appleWebApp: { capable: true, statusBarStyle: 'default', title: 'YesBundles' },
+};
+export const viewport = {
+  themeColor: '#0e2243',
 };
 export default function RootLayout({
   children,
@@ -26,6 +32,7 @@ export default function RootLayout({
         <MobileFAB />
         <AdSense />
         <Analytics />
+        <SWRegister />
       </body>
     </html>
   );
