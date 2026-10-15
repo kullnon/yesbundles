@@ -4,8 +4,15 @@ import { ProApps } from '@/components/pro-apps';
 import { LatestBlog } from '@/components/latest-blog';
 import { CategoryFilter } from '@/components/category-filter';
 import type { Product, Category } from '@/lib/types/product';
+import type { Metadata } from 'next';
+import { SITE_URL } from '@/lib/site';
 
 export const revalidate = 60;
+
+// Self-canonical: ?category= filters are views of this page, not pages of their own.
+export const metadata: Metadata = {
+  alternates: { canonical: SITE_URL },
+};
 
 // Bonus product copy — kept in sync with the bundle drawer + webhook.
 // If you change the threshold here, change it in:

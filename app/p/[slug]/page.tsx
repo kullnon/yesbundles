@@ -6,6 +6,7 @@ import { formatPrice } from '@/lib/utils';
 import { AddToBundleButton } from '@/components/add-to-bundle-button';
 import type { Product } from '@/lib/types/product';
 import type { Metadata } from 'next';
+import { SITE_URL } from '@/lib/site';
 
 export const revalidate = 60;
 
@@ -27,17 +28,19 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const price = formatPrice(data.price_cents);
   const description = data.description || `Download ${data.title} for ${price}. High-quality digital product from YesBundles.`;
 
+  const url = `${SITE_URL}/p/${slug}`;
   return {
     title: `${data.title} - ${price} | YesBundles`,
     description: description.slice(0, 160),
+    alternates: { canonical: url },
     openGraph: {
       title: data.title,
       description: description.slice(0, 160),
       type: "website",
-      url: `https://www.yesbundles.com/p/${slug}`,
+      url,
       siteName: "YesBundles",
       images: [{
-        url: data.preview_url || "https://www.yesbundles.com/og-default.png",
+        url: data.preview_url || `${SITE_URL}/og-default.png`,
         width: 1200,
         height: 630,
         alt: data.title,
@@ -47,7 +50,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       card: "summary_large_image",
       title: data.title,
       description: description.slice(0, 160),
-      images: [data.preview_url || "https://www.yesbundles.com/og-default.png"],
+      images: [data.preview_url || `${SITE_URL}/og-default.png`],
     },
   };
 }
