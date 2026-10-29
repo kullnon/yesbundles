@@ -3,7 +3,8 @@ import { createBlogAdminClient } from "@/lib/blog/admin";
 import { runEditor } from "@/lib/blog/engine";
 
 // Editor agent — runs daily at 09:00 UTC (vercel.json). Picks the highest
-// priority pending topic and creates a draft (title + meta + outline).
+// priority pending topic and creates a draft (title + meta + outline). Tops the
+// queue up first when it runs low (lib/blog/topics.ts).
 export const maxDuration = 60;
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -27,6 +28,7 @@ async function handle(request: Request) {
   try {
     const admin = createBlogAdminClient();
     const result = await runEditor(admin);
+    if (result.refilled.length) console.log(`[cron/editor-agent] queue refilled with ${result.refilled.length} topics:`, result.refilled);
     console.log("[cron/editor-agent] draft created:", result.slug);
     return NextResponse.json({ ok: true, ...result });
   } catch (e) {

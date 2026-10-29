@@ -5,7 +5,8 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Cluster } from "./types";
 import { slugify, getAllowedPaths, sanitizeBodyHtml, renderFaqHtml } from "./links";
-import { generateOutline, generateBody } from "./writer";
+import { generateOutline, generateBody, generateTopics } from "./writer";
+import { REFILL_BATCH, REFILL_BELOW, freshTopics } from "./topics";
 
 const OUTLINE_MARKER = "<!--OUTLINE:";
 
@@ -46,8 +47,48 @@ function decodeOutline(bodyHtml: string | null): string[] {
   }
 }
 
+// ── Planner: keep the queue REFILL_BELOW topics ahead ─────────────────────
+export async function refillTopicQueue(admin: SupabaseClient): Promise<{ pending: number; added: string[] }> {
+  const { count, error: countErr } = await admin
+    .from("blog_topic_queue")
+    .select("id", { count: "exact", head: true })
+    .eq("status", "pending");
+  if (countErr) throw new Error(`Failed to count pending topics: ${countErr.message}`);
+  const pending = count ?? 0;
+  if (pending >= REFILL_BELOW) return { pending, added: [] };
+
+  const [{ data: queued, error: qErr }, { data: posts, error: pErr }] = await Promise.all([
+    admin.from("blog_topic_queue").select("title"),
+    admin.from("blog_posts").select("title"),
+  ]);
+  if (qErr || pErr) throw new Error(`Failed to read existing titles: ${(qErr ?? pErr)?.message}`);
+  const existing = [...(queued ?? []), ...(posts ?? [])].map((r) => r.title as string);
+
+  const ideas = freshTopics(await generateTopics({ count: REFILL_BATCH, existingTitles: existing }), existing);
+  if (ideas.length === 0) {
+    throw new Error(`Topic queue is low (${pending} pending) and the planner proposed nothing new.`);
+  }
+  const { error } = await admin
+    .from("blog_topic_queue")
+    .insert(ideas.map((t) => ({ title: t.title, cluster: t.cluster, priority: 0, source: "auto-refill" })));
+  if (error) throw new Error(`Failed to insert refill topics: ${error.message}`);
+  return { pending: pending + ideas.length, added: ideas.map((t) => t.title) };
+}
+
 // ── Editor: queue/trend → draft row ────────────────────────────────────────
-export async function runEditor(admin: SupabaseClient): Promise<{ draftId: string; title: string; slug: string }> {
+export async function runEditor(admin: SupabaseClient): Promise<{ draftId: string; title: string; slug: string; refilled: string[] }> {
+  // Top the queue up first, so it never runs dry again. A failed refill does not
+  // stop today's post while topics remain; it is logged, and it is the error if
+  // the queue is actually empty.
+  let refilled: string[] = [];
+  let refillError: string | null = null;
+  try {
+    refilled = (await refillTopicQueue(admin)).added;
+  } catch (e) {
+    refillError = e instanceof Error ? e.message : String(e);
+    console.error("[blog/editor] topic refill failed:", refillError);
+  }
+
   // Pull the highest-priority pending topic.
   const { data: topic } = await admin
     .from("blog_topic_queue")
@@ -59,7 +100,7 @@ export async function runEditor(admin: SupabaseClient): Promise<{ draftId: strin
     .maybeSingle();
 
   if (!topic) {
-    throw new Error("No pending topics in blog_topic_queue.");
+    throw new Error(`No pending topics in blog_topic_queue.${refillError ? ` Refill failed: ${refillError}` : ""}`);
   }
 
   // Claim it so concurrent runs don't double-pick.
@@ -92,7 +133,7 @@ export async function runEditor(admin: SupabaseClient): Promise<{ draftId: strin
   }
 
   await admin.from("blog_topic_queue").update({ status: "done" }).eq("id", topic.id);
-  return { draftId: inserted.id, title: outline.title, slug };
+  return { draftId: inserted.id, title: outline.title, slug, refilled };
 }
 
 // ── Writer: oldest draft → published post ──────────────────────────────────

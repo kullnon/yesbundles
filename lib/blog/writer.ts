@@ -162,3 +162,60 @@ export async function generateBody(args: {
   const parsed = JSON.parse(firstText((res as { content: { type: string; text?: string }[] }).content)) as BodyResult;
   return parsed;
 }
+
+// ── Topic planner: refills blog_topic_queue when it runs low ──────────────
+export interface TopicIdea {
+  title: string;
+  cluster: Cluster;
+}
+
+const TOPICS_SCHEMA = {
+  type: "object",
+  additionalProperties: false,
+  required: ["topics"],
+  properties: {
+    topics: {
+      type: "array",
+      description: "New post topics, none overlapping an existing title.",
+      items: {
+        type: "object",
+        additionalProperties: false,
+        required: ["title", "cluster"],
+        properties: {
+          title: { type: "string", description: "A specific, search-shaped working title (<= 80 chars)." },
+          cluster: { type: "string", enum: ["finance", "career", "side_hustle"] },
+        },
+      },
+    },
+  },
+} as const;
+
+export async function generateTopics(args: { count: number; existingTitles: string[] }): Promise<TopicIdea[]> {
+  const client = await getClient();
+  const system = [
+    "You plan topics for a personal-finance, career, and side-hustle blog for working adults in the US.",
+    "Clusters: finance (budgeting, debt, saving, credit), career (pay, negotiation, job moves), side_hustle (realistic extra income).",
+    "Each topic answers one question a real person types into Google: specific, practical, with a clear search intent.",
+    "Spread the topics evenly across the three clusters.",
+    "Never repeat or lightly reword an existing title: a topic whose answer would mostly duplicate an existing post is not new.",
+    "No clickbait, no listicles of more than 10 items, no year in the title unless the answer genuinely changes by year.",
+  ].join("\n");
+  const user = [
+    `Propose ${args.count} new topics.`,
+    "",
+    "Existing titles (do not overlap any of these):",
+    ...args.existingTitles.map((t) => `- ${t}`),
+  ].join("\n");
+
+  const params = {
+    model: MODEL,
+    max_tokens: 2048,
+    system,
+    messages: [{ role: "user", content: user }],
+    output_config: { format: { type: "json_schema", schema: TOPICS_SCHEMA } },
+  } as unknown as Parameters<Awaited<ReturnType<typeof getClient>>["messages"]["create"]>[0];
+
+  const res = await client.messages.create(params);
+  const parsed = JSON.parse(firstText((res as { content: { type: string; text?: string }[] }).content)) as { topics: TopicIdea[] };
+  return parsed.topics ?? [];
+}
