@@ -59,6 +59,11 @@ export async function POST(request: Request) {
 
   const session = event.data.object as Stripe.Checkout.Session;
 
+  // Flow Watchdog synthetic sessions are expired unpaid; never fulfil one.
+  if (session.metadata?.synthetic === "1") {
+    return NextResponse.json({ received: true, ignored: "synthetic" });
+  }
+
   // ──────────────────────────────────────────────────────────────────
   // Branch: Pro mini-app standalone purchase (product_type=app_standalone)
   // Grants an app_entitlements row instead of download tokens. This MUST run

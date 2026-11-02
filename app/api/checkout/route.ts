@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import { createClient } from "@/lib/supabase/server";
+import { checkoutUser, syntheticSessionParams } from "@/lib/checkout-user";
 import { calculateBundlePrice } from "@/lib/bundle/calculate-price";
 import type { BundleRule, BundleItem } from "@/lib/types/product";
 
@@ -11,9 +12,7 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 export async function POST(request: Request) {
   try {
     const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const { user, synthetic } = await checkoutUser(request);
 
     if (!user) {
       return NextResponse.json(
@@ -23,7 +22,12 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const productIds: string[] = body.productIds || [];
+    let productIds: string[] = body.productIds || [];
+    // Flow Watchdog probe: one active product, whichever comes first.
+    if (synthetic && body.synthetic_pick === "first_active") {
+      const { data: first } = await supabase.from("products").select("id").eq("is_active", true).order("id").limit(1).maybeSingle<{ id: string }>();
+      productIds = first ? [first.id] : [];
+    }
 
     if (productIds.length === 0) {
       return NextResponse.json(
@@ -110,12 +114,14 @@ export async function POST(request: Request) {
         discount_cents: String(discountCents),
         total_cents: String(totalCents),
         bundle_rule_id: bundleRuleId ?? "",
+        ...(synthetic ? { synthetic: "1" } : {}),
       },
+      ...syntheticSessionParams(synthetic),
       success_url: `${siteUrl}/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${siteUrl}/checkout`,
     });
 
-    return NextResponse.json({ url: session.url });
+    return NextResponse.json(synthetic ? { url: session.url, sessionId: session.id } : { url: session.url });
   } catch (error) {
     console.error("Checkout error:", error);
     const message =

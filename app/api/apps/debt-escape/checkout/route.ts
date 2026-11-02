@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
-import { createClient, createAdminClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/server";
+import { checkoutUser, syntheticSessionParams } from "@/lib/checkout-user";
 import {
   APP_SLUG,
   APP_ROUTE,
@@ -17,12 +18,9 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 // Mirrors the conventions in /api/checkout (inline price_data, metadata-stamped
 // session) but stamps product_type=app_standalone so the Stripe webhook grants
 // an app_entitlements row instead of generating download tokens.
-export async function POST() {
+export async function POST(request: Request) {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const { user, synthetic } = await checkoutUser(request);
 
     if (!user) {
       return NextResponse.json(
@@ -78,12 +76,14 @@ export async function POST() {
         // referenced by the brief is the slug itself.
         yesbundles_product_id: APP_SLUG,
         total_cents: String(APP_PRICE_CENTS),
+        ...(synthetic ? { synthetic: "1" } : {}),
       },
+      ...syntheticSessionParams(synthetic),
       success_url: `${siteUrl}${APP_ROUTE}?purchase=success&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${siteUrl}${APP_ROUTE}?purchase=cancelled`,
     });
 
-    return NextResponse.json({ url: session.url });
+    return NextResponse.json(synthetic ? { url: session.url, sessionId: session.id } : { url: session.url });
   } catch (error) {
     console.error("App checkout error:", error);
     const message =
