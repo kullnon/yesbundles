@@ -26,6 +26,23 @@ function getServiceClient() {
   );
 }
 
+// Several apps share one Stripe account, so this endpoint receives every app's
+// events. An event tagged metadata.app for another app is not ours to process.
+type AppMetadataHolder = {
+  metadata?: Stripe.Metadata | null;
+  subscription_details?: { metadata?: Stripe.Metadata | null } | null;
+  parent?: { subscription_details?: { metadata?: Stripe.Metadata | null } | null } | null;
+};
+
+function isOtherAppEvent(event: Stripe.Event): boolean {
+  const obj = event.data.object as AppMetadataHolder;
+  const metadata = event.type.startsWith("invoice.")
+    ? obj.subscription_details?.metadata ?? obj.parent?.subscription_details?.metadata
+    : obj.metadata;
+  const app = metadata?.app;
+  return typeof app === "string" && app !== "" && app !== "yesbundles";
+}
+
 export async function POST(request: Request) {
   const body = await request.text();
   const signature = request.headers.get("stripe-signature");
@@ -51,6 +68,10 @@ export async function POST(request: Request) {
       { error: `Signature verification failed: ${message}` },
       { status: 400 }
     );
+  }
+
+  if (isOtherAppEvent(event)) {
+    return NextResponse.json({ ignored: "other app" });
   }
 
   if (event.type !== "checkout.session.completed") {
