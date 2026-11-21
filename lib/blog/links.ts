@@ -12,7 +12,7 @@ import sanitizeHtml from "sanitize-html";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 // Static internal targets the AI may link to.
-const STATIC_ALLOWED = ["/apps/debt-escape", "/apps/salary-negotiation", "/products"];
+const STATIC_ALLOWED = ["/apps/debt-escape", "/apps/salary-negotiation", "/"];
 
 const stripTrailingSlash = (s: string) =>
   s.length > 1 && s.endsWith("/") ? s.slice(0, -1) : s;

@@ -49,7 +49,7 @@ export const CLUSTERS: Record<Cluster, ClusterMeta> = {
     label: "Side Hustles",
     description: "Realistic ways to earn more on the side.",
     cta: {
-      href: "/products",
+      href: "/",
       product: "Income & business toolkits",
       blurb:
         "Ready to start? Our income and business toolkits give you the templates and trackers to launch this week.",
